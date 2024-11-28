@@ -8,6 +8,8 @@ class VideoPanel(wx.Panel):
         super().__init__(parent)
         self.SetBackgroundColour('blue')
 
+        self.is_active = True
+
         self.video_bitmap = wx.StaticBitmap(self)
 
         self.video_thread = threading.Thread(target=self.process_video, args=(video_source,))
@@ -38,20 +40,24 @@ class VideoPanel(wx.Panel):
             print(f"Error capturing video: {e}")
 
     def update_bitmap(self, bitmap):
-        img = bitmap.ConvertToImage()
-        img = img.Scale(self.GetSize()[0], self.GetSize()[1])
-        new_bitmap = wx.Bitmap(img)
-        self.video_bitmap.SetBitmap(new_bitmap)
+        if self.is_active:
+            # Convert the bitmap to an image
+            image = wx.ImageFromBitmap(bitmap)
+
+            # Scale the image to the desired size
+            image = image.Scale(self.GetSize()[0], self.GetSize()[1])
+
+            # Create a new bitmap from the scaled image
+            new_bitmap = wx.Bitmap(image)
+            self.video_bitmap.SetBitmap(new_bitmap)
 
     def OnSize(self, event):
         self.update_bitmap(self.video_bitmap.GetBitmap())
 
-    def __del__(self):
-        try:
-            if hasattr(self, 'cap'):
-                self.cap.release()
-        except:
-            pass
+    def Close(self, *args, **kwargs):
+        if hasattr(self, 'video_panel'):
+            self.video_panel.is_active = False  # Set flag here
+        super().Close(*args, **kwargs)
 
 
 class RecordingWindow(wx.Frame):
